@@ -178,10 +178,36 @@ for (const name of functions) {
 // This adapter does not add an all-effects install gate or propagate caller env.
 const patchedInstall = install.replaceAll(loop, `if ((params.env ?? process.env).OPENCLAW_NIX_MODE !== "1") ${loop}`);
 
+const uiFiles = [...modules.keys()].filter((name) => modules.get(name).includes("function readPluginControlUiAssets("));
+const uiPatches = [];
+if (uiFiles.length) {
+  const assetName = unique(uiFiles, "Control UI asset reader");
+  const assets = modules.get(assetName);
+  const assetRoot = 'const pluginRoot = await root(rootDir, {\n\t\thardlinks: "reject"';
+  const reloadCall = "loadPluginManifest(record.rootDir, true, record.rootDir)";
+  const [reloadName, reload] = owner(reloadCall, "Control UI manifest reload");
+  requireContract(assets.split(assetRoot).length === 2, "Control UI asset root");
+  requireContract(reload.split(reloadCall).length === 2, "Control UI manifest reload count");
+  requireContract(assetName !== reloadName, "distinct Control UI transform owners");
+  for (const source of [assets, reload]) {
+    requireContract(!source.includes("shouldRejectHardlinkedPluginFiles"), "Control UI policy import");
+  }
+  // Treat both reads as config-origin roots: only Nix mode and a canonical
+  // store path relax hardlinks; mutable roots and symlinks remain restricted.
+  uiPatches.push([
+    assetName,
+    `${importLine}\n${assets.replace(assetRoot, 'const pluginRoot = await root(rootDir, {\n\t\thardlinks: shouldRejectHardlinkedPluginFiles({ rootDir, origin: "config" }) ? "reject" : "allow"')}`,
+  ], [
+    reloadName,
+    `${importLine}\n${reload.replace(reloadCall, 'loadPluginManifest(record.rootDir, shouldRejectHardlinkedPluginFiles({ rootDir: record.rootDir, origin: "config" }), record.rootDir)')}`,
+  ]);
+}
+
 // No contract failure may leave the earlier ownership transform partially written.
 for (const [name, source] of [
   [ownershipName, patchedOwnership],
   [installName, patchedInstall],
+  ...uiPatches,
 ]) {
   fs.writeFileSync(path.join(distDir, name), source);
 }

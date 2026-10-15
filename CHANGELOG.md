@@ -6,6 +6,8 @@ Older repository history is available in git.
 
 ## Unreleased
 
+- Load hardlinked Control UI plugin assets and reload their manifests from canonical Nix-store roots in Nix mode, preserving rejection for mutable paths; thanks @paulcam206 (#165).
+
 - Refresh Nixpkgs, Home Manager, bundled OpenClaw tools and example-plugin inputs, and update the private pnpm 11 runtime to 11.27.0.
 - Refresh Nix inputs and the example plugin lock, and update private source-build pnpm runtimes to 11.27.1 and 12.6.0.
 - Prevent newly published backports from downgrading the selected gateway or macOS app; order stable releases and numeric corrections by version.
