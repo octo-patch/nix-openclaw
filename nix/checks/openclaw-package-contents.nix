@@ -15,13 +15,11 @@ stdenv.mkDerivation {
 
   env = {
     OPENCLAW_GATEWAY = openclawGateway;
+    OPENCLAW_CONTROL_UI_CHECK = ../tests/control-ui-assets/check.mjs;
   };
 
   doCheck = true;
   nativeCheckInputs = [ nodejs_24 ];
-  checkPhase = ''
-    ${../scripts/check-package-contents.sh}
-    OPENCLAW_PACKAGE_ROOT="$OPENCLAW_GATEWAY/lib/openclaw" node ${../tests/control-ui-assets/check.mjs}
-  '';
+  checkPhase = "${../scripts/check-package-contents.sh}";
   installPhase = "${../scripts/empty-install.sh}";
 }

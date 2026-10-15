@@ -138,3 +138,7 @@ if ! find "${root}/skills" -name SKILL.md -type f | grep -q .; then
 fi
 
 echo "openclaw package contents: ok"
+
+if [ -n "${OPENCLAW_CONTROL_UI_CHECK:-}" ]; then
+  OPENCLAW_PACKAGE_ROOT="$root" node "$OPENCLAW_CONTROL_UI_CHECK"
+fi
