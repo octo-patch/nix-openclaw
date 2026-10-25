@@ -14,7 +14,7 @@ import {
 import { resolveClawHubArtifact, resolveNpmArtifact } from "./artifacts.mjs";
 
 export function createLockBuilder({
-  releaseVersion, packageLocks, prepareLockedPackage, computeNpmDepsHash, probeLockMaterialization,
+  releaseVersion, repoRoot, packageLocks, prepareLockedPackage, computeNpmDepsHash, probeLockMaterialization,
 }) {
   verifyCompatibilityTool();
 
@@ -118,7 +118,10 @@ export function createLockBuilder({
         tmpDir,
       ]);
 
-      const packageRoot = path.join(tmpDir, "package");
+      const sourceRoot = artifact.packageSubdir
+        ? path.join("package", artifact.packageSubdir)
+        : "package";
+      const packageRoot = path.join(tmpDir, sourceRoot);
       const packageJsonPath = path.join(packageRoot, "package.json");
       const manifestPath = path.join(packageRoot, "openclaw.plugin.json");
       if (!fs.existsSync(packageJsonPath) || !fs.existsSync(manifestPath)) {
@@ -215,6 +218,7 @@ export function createLockBuilder({
         minHostVersion: row.install?.minHostVersion ?? "",
         expectedIntegrity: row.install?.expectedIntegrity ?? "",
         packageName: artifact.packageName,
+        ...(artifact.packageSubdir ? { sourceRoot } : {}),
         version: artifact.version,
         tarballUrl: artifact.tarballUrl,
         npmIntegrity: artifact.npmIntegrity,
@@ -252,7 +256,58 @@ export function createLockBuilder({
       return { skipped: skip(row, "missing-install-metadata", "catalog row has no install metadata") };
     }
     if (row.selectedSource === "local") {
-      return { skipped: skip(row, "local-source-unsupported", "catalog-selected local paths are not reproducible Nix artifacts") };
+      const packageRoot = path.resolve(repoRoot, row.install.localPath);
+      const packageJsonPath = path.join(packageRoot, "package.json");
+      const manifestPath = path.join(packageRoot, "openclaw.plugin.json");
+      if (!fs.existsSync(packageJsonPath) || !fs.existsSync(manifestPath)) {
+        return { skipped: skip(row, "local-source-missing-metadata", "local runtime plugin source lacks package.json or openclaw.plugin.json") };
+      }
+      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+      if (manifest.id !== row.id) {
+        return { skipped: skip(row, "manifest-id-mismatch", `openclaw.plugin.json id is ${manifest.id}`) };
+      }
+      let resolvedRuntimeEntries;
+      try {
+        resolvedRuntimeEntries = resolveRuntimeEntries(packageRoot, packageJson);
+      } catch (error) {
+        return { skipped: skip(row, "missing-runtime-entry", error.message) };
+      }
+      const generatedDir = path.join(repoRoot, "nix/generated/openclaw-runtime-plugins");
+      const sourcePath = path.relative(generatedDir, packageRoot);
+      const dependencies = sortedObject(packageJson.dependencies ?? {});
+      const optionalDependencies = sortedObject(packageJson.optionalDependencies ?? {});
+      const lock = pickDefined({
+        id: row.id,
+        attrName: attrNameForId(row.id),
+        label: row.label,
+        kind: row.kind,
+        catalogSource: row.source,
+        catalogFile: row.catalogFile,
+        catalogEntryName: row.catalogEntryName,
+        catalogDefaultChoice: row.install?.defaultChoice ?? null,
+        selectedSource: "local",
+        localPath: row.install.localPath,
+        sourcePath,
+        sourceRoot: ".",
+        minHostVersion: row.install?.minHostVersion ?? "",
+        expectedIntegrity: row.install?.expectedIntegrity ?? "",
+        packageName: packageJson.name,
+        version: packageJson.version,
+        dependencyMode: "none",
+        manifestId: manifest.id,
+        openclawCompat: packageJson.openclaw?.compat?.pluginApi ?? "",
+        peerOpenClaw: packageJson.peerDependencies?.openclaw ?? "",
+        runtimeExtensions: resolvedRuntimeEntries.runtimeExtensions,
+        runtimeSetupEntry: resolvedRuntimeEntries.runtimeSetupEntry,
+        channels: manifest.channels ?? [],
+        contracts: manifest.contracts ?? {},
+        dependencies,
+        optionalDependencies,
+        bundleDependencies: [],
+        bundledPackageRoots: [],
+      });
+      return { lock, supported: supportedReport(lock) };
     }
     if (row.selectedSource === "clawhub") {
       const clawhubPackage = parseClawHubSpec(row.install.clawhubSpec);

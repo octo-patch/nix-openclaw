@@ -57,6 +57,7 @@ function catalogInstall(entry) {
     npmSpec,
     clawhubSpec,
     localPath,
+    packageSubdir: optionalString(install.packageSubdir),
     defaultChoice,
     minHostVersion: optionalString(install.minHostVersion),
     expectedIntegrity: optionalString(install.expectedIntegrity),
@@ -201,6 +202,39 @@ function readCatalogRows(openclawSourcePath) {
         selectedSource: selectedSource(install),
       });
     }
+  }
+
+  // MiniMax is shipped in the pinned OpenClaw gateway but is not listed in
+  // OpenClaw's external-provider catalog. Keep it in this generated registry
+  // through a tiny local adapter that delegates to that bundled extension.
+  const minimaxSourceManifest = path.join(
+    openclawSourcePath,
+    "extensions/minimax/openclaw.plugin.json",
+  );
+  if (fs.existsSync(minimaxSourceManifest)) {
+    rows.push({
+      entry: {
+        name: "nix:runtime-plugins/minimax",
+        openclaw: {
+          plugin: { id: "minimax", label: "MiniMax" },
+          install: {
+            localPath: "nix/runtime-plugins/minimax",
+            defaultChoice: "local",
+          },
+        },
+      },
+      id: "minimax",
+      label: "MiniMax",
+      kind: "provider",
+      source: "official",
+      catalogFile: "nix-openclaw-provider-overrides.json",
+      catalogEntryName: "nix:runtime-plugins/minimax",
+      install: {
+        localPath: "nix/runtime-plugins/minimax",
+        defaultChoice: "local",
+      },
+      selectedSource: "local",
+    });
   }
   return rows;
 }

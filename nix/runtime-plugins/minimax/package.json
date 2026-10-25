@@ -1,0 +1,13 @@
+{
+  "name": "@openclaw/minimax-provider",
+  "version": "2026.10.7",
+  "type": "module",
+  "peerDependencies": {
+    "openclaw": ">=2026.10.7"
+  },
+  "openclaw": {
+    "extensions": [
+      "./index.js"
+    ]
+  }
+}

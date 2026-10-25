@@ -7,8 +7,11 @@ function nixAttrName(name) {
   return /^[A-Za-z_][A-Za-z0-9_'-]*$/.test(name) ? name : nixString(name);
 }
 
-function toNix(value, indent = "") {
+function toNix(value, indent = "", key = "") {
   const nextIndent = `${indent}  `;
+  if (key === "sourcePath" && typeof value === "string") {
+    return value;
+  }
   if (value === null) {
     return "null";
   }
@@ -30,7 +33,7 @@ function toNix(value, indent = "") {
       return "{ }";
     }
     return `{\n${entries
-      .map(([key, item]) => `${nextIndent}${nixAttrName(key)} = ${toNix(item, nextIndent)};`)
+      .map(([entryKey, item]) => `${nextIndent}${nixAttrName(entryKey)} = ${toNix(item, nextIndent, entryKey)};`)
       .join("\n")}\n${indent}}`;
   }
   throw new Error(`Unsupported Nix value: ${value}`);

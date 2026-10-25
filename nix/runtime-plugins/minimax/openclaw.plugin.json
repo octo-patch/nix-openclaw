@@ -1,0 +1,17 @@
+{
+  "id": "minimax",
+  "categories": [
+    "models"
+  ],
+  "enabledByDefault": true,
+  "providers": [
+    "minimax",
+    "minimax-portal"
+  ],
+  "modelCatalog": {
+    "discovery": {
+      "minimax": "runtime",
+      "minimax-portal": "runtime"
+    }
+  }
+}

@@ -26,7 +26,9 @@ let
   npmHooksForNode = npmHooks.override { nodejs = nodejs_24; };
   sourceHash = lock.nixHash or lock.hash;
   pluginSrc =
-    if (lock.tarballUrl or null) != null then
+    if (lock.sourcePath or null) != null then
+      lock.sourcePath
+    else if (lock.tarballUrl or null) != null then
       fetchurl {
         url = lock.tarballUrl;
         hash = sourceHash;
@@ -83,7 +85,7 @@ let
 
       src = pluginSrc;
 
-      sourceRoot = "package";
+      sourceRoot = lock.sourceRoot or "package";
 
       nativeBuildInputs = [
         nodejs_24

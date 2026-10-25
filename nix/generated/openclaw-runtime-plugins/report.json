@@ -811,6 +811,22 @@
       "peerOpenClaw": ">=2026.10.7"
     },
     {
+      "id": "minimax",
+      "status": "supported",
+      "label": "MiniMax",
+      "kind": "provider",
+      "source": "official",
+      "catalogFile": "nix-openclaw-provider-overrides.json",
+      "catalogEntryName": "nix:runtime-plugins/minimax",
+      "catalogDefaultChoice": "local",
+      "selectedSource": "local",
+      "packageName": "@openclaw/minimax-provider",
+      "version": "2026.10.7",
+      "dependencyMode": "none",
+      "openclawCompat": "",
+      "peerOpenClaw": ""
+    },
+    {
       "id": "mistral",
       "status": "supported",
       "label": "Mistral",

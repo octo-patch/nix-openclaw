@@ -47,7 +47,7 @@ const packageLocks = createNpmPackageLockMaterializer({
   prepare: prepareLockedPackage, computeNpmDepsHash,
 });
 const { processRow } = createLockBuilder({
-  releaseVersion, packageLocks, prepareLockedPackage, computeNpmDepsHash, probeLockMaterialization,
+  releaseVersion, repoRoot, packageLocks, prepareLockedPackage, computeNpmDepsHash, probeLockMaterialization,
 });
 const { desiredGeneratedFiles, existingGeneratedFiles, checkGeneratedFiles } =
   createGeneratedOutput({ repoRoot, outputDir, packageLocks });

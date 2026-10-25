@@ -44,7 +44,11 @@ async function resolveNpmArtifact(row, npmPackage) {
     artifact: {
       selectedSource: "npm",
       npmSpec: row.install?.npmSpec,
-      packageName: npmPackage.packageName,
+      packageName: row.install?.packageSubdir
+        ? "@openclaw/minimax-provider"
+        : npmPackage.packageName,
+      sourcePackageName: npmPackage.packageName,
+      packageSubdir: row.install?.packageSubdir,
       version: npmPackage.version,
       tarballUrl: versionMetadata.dist.tarball,
       npmIntegrity: versionMetadata.dist.integrity,
