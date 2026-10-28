@@ -39,3 +39,14 @@ test("schema descriptions, enum values and option names remain literal Nix data"
 test("NUL is rejected rather than emitting a lossy Nix literal", () => {
   assert.throws(() => nixString("before\0after"), /NUL/);
 });
+
+test("generated source paths stay relative and cannot inject Nix expressions", () => {
+  assert.equal(
+    toNix({ sourcePath: "../../runtime-plugins/minimax" }),
+    "{\n  sourcePath = ../../runtime-plugins/minimax;\n}",
+  );
+  assert.throws(
+    () => toNix({ sourcePath: '../../runtime-plugins/minimax; builtins.abort "unsafe"' }),
+    /Invalid generated Nix source path/,
+  );
+});

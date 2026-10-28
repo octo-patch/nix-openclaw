@@ -824,7 +824,7 @@
       "version": "2026.10.7",
       "dependencyMode": "none",
       "openclawCompat": "",
-      "peerOpenClaw": ""
+      "peerOpenClaw": ">=2026.10.7"
     },
     {
       "id": "mistral",

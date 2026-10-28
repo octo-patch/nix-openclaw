@@ -10,6 +10,9 @@ function nixAttrName(name) {
 function toNix(value, indent = "", key = "") {
   const nextIndent = `${indent}  `;
   if (key === "sourcePath" && typeof value === "string") {
+    if (!/^(?:\.\.\/)+[A-Za-z0-9._/-]+$/.test(value)) {
+      throw new Error(`Invalid generated Nix source path: ${value}`);
+    }
     return value;
   }
   if (value === null) {

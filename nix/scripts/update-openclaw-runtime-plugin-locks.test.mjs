@@ -35,11 +35,33 @@ function fixture(t) {
   fs.writeFileSync(path.join(bin, "nix"), '#!/bin/sh\nprintf invoked > "$MARKER"\nprintf "%s\\n" "$SOURCE"\n', { mode: 0o755 });
   const generated = path.join(root, "nix/generated/openclaw-runtime-plugins");
   return {
-    marker, generated,
+    root, source, marker, generated,
     run: (...args) => spawnSync(process.execPath, [path.join(scripts, "update-openclaw-runtime-plugin-locks.mjs"), ...args], {
       cwd: root, encoding: "utf8", env: { ...process.env, PATH: bin, MARKER: marker, SOURCE: source },
     }),
   };
+}
+
+function addMinimaxProviderFixture(f) {
+  const upstreamExtension = path.join(f.source, "extensions/minimax");
+  fs.mkdirSync(upstreamExtension, { recursive: true });
+  fs.writeFileSync(path.join(upstreamExtension, "openclaw.plugin.json"), '{"id":"minimax"}');
+
+  const adapter = path.join(f.root, "nix/runtime-plugins/minimax");
+  fs.mkdirSync(adapter, { recursive: true });
+  fs.writeFileSync(path.join(adapter, "index.js"), "export default {};\n");
+  fs.writeFileSync(path.join(adapter, "openclaw.plugin.json"), JSON.stringify({
+    id: "minimax",
+    categories: ["models"],
+    providers: ["minimax"],
+  }));
+  fs.writeFileSync(path.join(adapter, "package.json"), JSON.stringify({
+    name: "@openclaw/minimax-provider",
+    version: "2026.9.4",
+    type: "module",
+    peerDependencies: { openclaw: ">=2026.9.4" },
+    openclaw: { extensions: ["./index.js"] },
+  }));
 }
 
 for (const args of [["--chek"], ["--check", "unexpected"], ["--check", "--check"]]) {
@@ -74,4 +96,23 @@ test("apply creates the generated files and a subsequent check leaves them uncha
   const check = f.run("--check");
   assert.equal(check.status, 0, check.stderr);
   assert.deepEqual(fs.readdirSync(f.generated).map((name) => [name, fs.readFileSync(path.join(f.generated, name), "utf8")]), before);
+});
+
+test("generates a local adapter for the bundled MiniMax provider", (t) => {
+  const f = fixture(t);
+  addMinimaxProviderFixture(f);
+
+  const result = f.run();
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(
+    fs.readFileSync(path.join(f.generated, "minimax.nix"), "utf8"),
+    /sourcePath = \.\.\/\.\.\/runtime-plugins\/minimax;/,
+  );
+  assert.match(
+    fs.readFileSync(path.join(f.generated, "default.nix"), "utf8"),
+    /minimax = import \.\/minimax\.nix;/,
+  );
+  const report = JSON.parse(fs.readFileSync(path.join(f.generated, "report.json"), "utf8"));
+  assert.equal(report.supported.find((entry) => entry.id === "minimax")?.selectedSource, "local");
 });

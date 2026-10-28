@@ -57,7 +57,6 @@ function catalogInstall(entry) {
     npmSpec,
     clawhubSpec,
     localPath,
-    packageSubdir: optionalString(install.packageSubdir),
     defaultChoice,
     minHostVersion: optionalString(install.minHostVersion),
     expectedIntegrity: optionalString(install.expectedIntegrity),

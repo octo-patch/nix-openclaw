@@ -6,6 +6,7 @@ Older repository history is available in git.
 
 ## Unreleased
 
+- Package the bundled MiniMax provider as a generated runtime plugin so declarative instances can enable its current model catalog.
 - Use a private Node 24.22.1 runtime for OpenClaw packaging, pin updates, and validation, satisfying OpenClaw 2026.10.6 without replacing consumer Node packages.
 - Upgrade the stable gateway to MCP SDK 1.32.0 so HTTP MCP and OAuth requests reject cross-origin redirects; retain issuer-bound saved credentials. Thanks @SebTardif (#172).
 - Restore stable-pin validation for OpenClaw 2026.10.5 by loading Control UI asset limits from the pinned source in the patch check, retaining hardlink, symlink, and asset-bound assertions.

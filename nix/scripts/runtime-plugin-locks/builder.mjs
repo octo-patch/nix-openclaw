@@ -118,10 +118,7 @@ export function createLockBuilder({
         tmpDir,
       ]);
 
-      const sourceRoot = artifact.packageSubdir
-        ? path.join("package", artifact.packageSubdir)
-        : "package";
-      const packageRoot = path.join(tmpDir, sourceRoot);
+      const packageRoot = path.join(tmpDir, "package");
       const packageJsonPath = path.join(packageRoot, "package.json");
       const manifestPath = path.join(packageRoot, "openclaw.plugin.json");
       if (!fs.existsSync(packageJsonPath) || !fs.existsSync(manifestPath)) {
@@ -218,7 +215,6 @@ export function createLockBuilder({
         minHostVersion: row.install?.minHostVersion ?? "",
         expectedIntegrity: row.install?.expectedIntegrity ?? "",
         packageName: artifact.packageName,
-        ...(artifact.packageSubdir ? { sourceRoot } : {}),
         version: artifact.version,
         tarballUrl: artifact.tarballUrl,
         npmIntegrity: artifact.npmIntegrity,
@@ -257,6 +253,14 @@ export function createLockBuilder({
     }
     if (row.selectedSource === "local") {
       const packageRoot = path.resolve(repoRoot, row.install.localPath);
+      const relativePackageRoot = path.relative(repoRoot, packageRoot);
+      if (
+        relativePackageRoot === ".."
+        || relativePackageRoot.startsWith(`..${path.sep}`)
+        || path.isAbsolute(relativePackageRoot)
+      ) {
+        return { skipped: skip(row, "local-source-outside-repository", row.install.localPath) };
+      }
       const packageJsonPath = path.join(packageRoot, "package.json");
       const manifestPath = path.join(packageRoot, "openclaw.plugin.json");
       if (!fs.existsSync(packageJsonPath) || !fs.existsSync(manifestPath)) {
