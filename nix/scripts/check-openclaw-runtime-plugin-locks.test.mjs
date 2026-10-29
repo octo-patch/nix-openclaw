@@ -21,15 +21,22 @@ function fixture(t) {
     ["releaseVersion", releaseVersion], ["releaseTag", releaseTag], ["rev", releaseRev],
     ["runtimePluginVersion", version], ["hash", sri],
   ].map(([key, value]) => `  ${key} = "${value}";`).join("\n"));
-  const supported = ["acpx", "brave", "slack", "discord", "diagnostics-prometheus"].map((id) => ({
-    id, status: "supported", selectedSource: "npm", packageName: `@openclaw/${id}`, version,
-    dependencyMode: id === "acpx" ? "package-lock" : "none",
-  }));
+  const supported = ["acpx", "brave", "slack", "discord", "diagnostics-prometheus", "minimax"]
+    .map((id) => ({
+      id, status: "supported", selectedSource: id === "minimax" ? "bundled" : "npm",
+      packageName: `@openclaw/${id}`, version,
+      dependencyMode: id === "acpx" ? "package-lock" : id === "minimax" ? "bundled" : "none",
+    }));
   const locks = Object.fromEntries(supported.map(({ status, ...row }) => [row.id, {
     ...row, label: null, kind: null, catalogSource: null, catalogFile: null,
     catalogEntryName: null, catalogDefaultChoice: null, openclawCompat: null, peerOpenClaw: null,
     manifestId: row.id, tarballUrl: "https://registry.npmjs.org/test.tgz", nixHash: sri,
   }]));
+  Object.assign(locks.minimax, {
+    bundledPath: "dist/extensions/minimax",
+    tarballUrl: undefined,
+    nixHash: undefined,
+  });
   const lockText = jsonText(packageLock());
   Object.assign(locks.acpx, {
     npmDepsHash: sri, npmPackageLockFile: "acpx.package-lock.json", npmPackageLockSha256: sha256(lockText),

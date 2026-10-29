@@ -45,8 +45,15 @@ let
   buildOpenClawRuntimePlugin = runtimePkgs.callPackage ../lib/openclaw-runtime-plugin.nix {
     openclawPackage = openclawGateway;
   };
+  buildBundledOpenClawRuntimePlugin = runtimePkgs.callPackage ../lib/openclaw-bundled-runtime-plugin.nix {
+    openclawPackage = openclawGateway;
+  };
   openclawRuntimePlugins = pkgs.lib.mapAttrs (
-    _name: lock: buildOpenClawRuntimePlugin lock
+    _name: lock:
+    if lock.selectedSource == "bundled" then
+      buildBundledOpenClawRuntimePlugin lock
+    else
+      buildOpenClawRuntimePlugin lock
   ) runtimePluginLocks;
   openclawApp = if isDarwin then runtimePkgs.callPackage ./openclaw-app.nix { } else null;
   openclawBundle = runtimePkgs.callPackage ./openclaw-batteries.nix {

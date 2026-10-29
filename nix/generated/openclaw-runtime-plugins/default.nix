@@ -50,6 +50,7 @@
   mattermost = import ./mattermost.nix;
   memory-lancedb = import ./memoryLancedb.nix;
   meta = import ./meta.nix;
+  minimax = import ./minimax.nix;
   mistral = import ./mistral.nix;
   moonshot = import ./moonshot.nix;
   msteams = import ./msteams.nix;

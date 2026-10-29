@@ -88,6 +88,9 @@ function lockSourceIsValid(lock) {
       && lock.clawhubVersion === lock.version
     );
   }
+  if (lock.selectedSource === "bundled") {
+    return lock.bundledPath === `dist/extensions/${lock.id}`;
+  }
   return false;
 }
 
@@ -118,7 +121,10 @@ assert(sameArray(lockIds, supportedIds), "imported lock ids do not match report 
 for (const row of supported) {
   const lock = locks[row.id];
   assert(row.status === "supported", `supported row ${row.id} has wrong status`);
-  assert(row.selectedSource === "npm" || row.selectedSource === "clawhub", `supported row ${row.id} has invalid source`);
+  assert(
+    ["npm", "clawhub", "bundled"].includes(row.selectedSource),
+    `supported row ${row.id} has invalid source`,
+  );
   assert(row.packageName, `supported row ${row.id} has no packageName`);
   assert(
     ["none", "bundled", "shrinkwrap", "package-lock"].includes(row.dependencyMode),
@@ -148,7 +154,11 @@ for (const row of supported) {
   assert(lock.manifestId === row.id, `lock ${row.id} manifestId does not match id`);
   assert(lockSourceIsValid(lock), `lock ${row.id} has invalid source metadata`);
   assert(!lock.npmIntegrity || /^(sha512|sha384|sha256)-/.test(lock.npmIntegrity), `lock ${row.id} has invalid npm SRI integrity`);
-  assert(/^sha256-/.test(lock.nixHash), `lock ${row.id} has missing Nix hash`);
+  if (lock.selectedSource === "bundled") {
+    assert(!lock.nixHash, `bundled lock ${row.id} has unexpected Nix hash`);
+  } else {
+    assert(/^sha256-/.test(lock.nixHash), `lock ${row.id} has missing Nix hash`);
+  }
   if (["shrinkwrap", "package-lock"].includes(lock.dependencyMode)) {
     assert(/^sha256-/.test(lock.npmDepsHash), `lock ${row.id} has missing npmDepsHash`);
     assert((lock.bundledPackageRoots ?? []).length === 0, `lock ${row.id} ${lock.dependencyMode} mode should not list bundled roots`);
@@ -185,7 +195,7 @@ for (const row of skipped) {
   assert(row.catalogFile, `skipped row ${row.id ?? row.catalogEntryName} has no catalogFile`);
 }
 
-for (const expected of ["slack", "discord", "brave", "diagnostics-prometheus"]) {
+for (const expected of ["slack", "discord", "brave", "diagnostics-prometheus", "minimax"]) {
   requireSupportedId(expected);
 }
 

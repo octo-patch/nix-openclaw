@@ -73,6 +73,7 @@ let
     runtimePlugins = [
       "amazon-bedrock"
       "discord"
+      "minimax"
     ];
   };
   runtimePluginCatalogGeneratedConfig = generatedConfig runtimePluginCatalogGeneratedEval ".openclaw/openclaw.json";
@@ -101,6 +102,14 @@ let
           throw "runtimePlugins did not enable generated provider plugin entry."
         else if ((runtimePluginCatalogGeneratedEntries.discord or { }).enabled or false) != true then
           throw "runtimePlugins did not enable generated channel plugin entry."
+        else if
+          !(lib.any (
+            path: lib.hasInfix "openclaw-runtime-plugin-minimax" path
+          ) runtimePluginCatalogGeneratedLoadPaths)
+        then
+          throw "runtimePlugins did not accept the bundled MiniMax provider plugin."
+        else if ((runtimePluginCatalogGeneratedEntries.minimax or { }).enabled or false) != true then
+          throw "runtimePlugins did not enable the bundled MiniMax provider plugin."
         else
           "ok"
       );

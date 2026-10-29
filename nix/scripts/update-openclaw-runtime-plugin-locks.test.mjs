@@ -24,6 +24,16 @@ function fixture(t) {
   for (const kind of ["channel", "plugin", "provider"]) {
     fs.writeFileSync(path.join(source, "scripts/lib", `official-external-${kind}-catalog.json`), "[]");
   }
+  const bundledProvider = path.join(source, "extensions/minimax");
+  fs.mkdirSync(bundledProvider, { recursive: true });
+  fs.writeFileSync(
+    path.join(bundledProvider, "package.json"),
+    '{"name":"@openclaw/minimax-provider","version":"2026.9.4","private":true}',
+  );
+  fs.writeFileSync(
+    path.join(bundledProvider, "openclaw.plugin.json"),
+    '{"id":"minimax","providers":["minimax"],"providerAuthChoices":[{"groupLabel":"MiniMax"}]}',
+  );
   const bin = path.join(root, "bin");
   fs.mkdirSync(bin);
   fs.symlinkSync(process.execPath, path.join(bin, "node"));
@@ -70,6 +80,9 @@ test("check reports missing generated files without creating their directory", (
 test("apply creates the generated files and a subsequent check leaves them unchanged", (t) => {
   const f = fixture(t), apply = f.run();
   assert.equal(apply.status, 0, apply.stderr);
+  assert.match(fs.readFileSync(path.join(f.generated, "default.nix"), "utf8"), /minimax/);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(f.generated, "report.json"), "utf8"))
+    .supported.some((row) => row.id === "minimax" && row.selectedSource === "bundled"), true);
   const before = fs.readdirSync(f.generated).map((name) => [name, fs.readFileSync(path.join(f.generated, name), "utf8")]);
   const check = f.run("--check");
   assert.equal(check.status, 0, check.stderr);

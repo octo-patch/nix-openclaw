@@ -7,6 +7,7 @@ export const catalogFiles = [
   "official-external-plugin-catalog.json",
   "official-external-provider-catalog.json",
 ];
+export const bundledProviderIds = ["minimax"];
 
 function parseCatalogEntries(raw) {
   if (Array.isArray(raw)) {
@@ -205,4 +206,46 @@ function readCatalogRows(openclawSourcePath) {
   return rows;
 }
 
-export { parseNpmSpec, parseClawHubSpec, npmRegistryUrl, clawHubArtifactUrl, isExactVersion, attrNameForId, skip, supportedReport, readCatalogRows };
+function readBundledProviderLocks(openclawSourcePath, runtimePluginVersion) {
+  return bundledProviderIds.map((id) => {
+    const extensionPath = path.join(openclawSourcePath, "extensions", id);
+    const packageJson = JSON.parse(fs.readFileSync(path.join(extensionPath, "package.json"), "utf8"));
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(extensionPath, "openclaw.plugin.json"), "utf8"),
+    );
+    if (manifest.id !== id || !manifest.providers?.includes(id)) {
+      throw new Error(`Bundled provider ${id} has inconsistent manifest metadata`);
+    }
+    if (packageJson.version !== runtimePluginVersion) {
+      throw new Error(
+        `Bundled provider ${id} version ${packageJson.version} does not match ${runtimePluginVersion}`,
+      );
+    }
+
+    const label = manifest.providerAuthChoices?.[0]?.groupLabel ?? id;
+    const lock = {
+      id,
+      attrName: attrNameForId(id),
+      label,
+      kind: "provider",
+      catalogSource: "bundled",
+      catalogFile: `extensions/${id}/openclaw.plugin.json`,
+      catalogEntryName: packageJson.name,
+      catalogDefaultChoice: null,
+      selectedSource: "bundled",
+      packageName: packageJson.name,
+      version: packageJson.version,
+      dependencyMode: "bundled",
+      bundledPath: `dist/extensions/${id}`,
+      manifestId: manifest.id,
+      openclawCompat: "",
+      peerOpenClaw: "",
+    };
+    return { lock, supported: supportedReport(lock) };
+  });
+}
+
+export {
+  parseNpmSpec, parseClawHubSpec, npmRegistryUrl, clawHubArtifactUrl, isExactVersion,
+  attrNameForId, skip, supportedReport, readCatalogRows, readBundledProviderLocks,
+};

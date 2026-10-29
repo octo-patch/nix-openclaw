@@ -4,7 +4,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createNpmPackageLockMaterializer } from "./openclaw-runtime-plugin-package-locks.mjs";
 import { resolveRuntimePluginVersion } from "./openclaw-runtime-plugin-version.mjs";
-import { catalogFiles, readCatalogRows, skip } from "./runtime-plugin-locks/catalog.mjs";
+import {
+  catalogFiles, readBundledProviderLocks, readCatalogRows, skip,
+} from "./runtime-plugin-locks/catalog.mjs";
 import { createNixTools } from "./runtime-plugin-locks/nix.mjs";
 import { createLockBuilder } from "./runtime-plugin-locks/builder.mjs";
 import { createGeneratedOutput } from "./runtime-plugin-locks/output.mjs";
@@ -70,6 +72,12 @@ const locks = [];
 const supported = [];
 const skipped = [];
 const seenCatalogKeys = new Set();
+
+for (const result of readBundledProviderLocks(openclawSourcePath, runtimePluginVersion)) {
+  locks.push(result.lock);
+  supported.push(result.supported);
+  seenCatalogKeys.add(result.lock.id);
+}
 
 for (const row of rows) {
   const dedupeKey = row.id ?? row.catalogEntryName ?? "";
